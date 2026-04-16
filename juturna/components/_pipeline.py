@@ -5,7 +5,7 @@ import pathlib
 import gc
 import typing
 
-from juturna.components import _component_builder
+from juturna.components import _builder
 from juturna.components import Node
 from juturna.components._dag import DAG
 from juturna.utils.log_utils import jt_logger
@@ -138,16 +138,14 @@ class Pipeline:
             if node.get('warped', False):
                 warped_node_cfg = node['configuration']
                 node['type'] = 'proc'
-                node['mark'] = 'warp'
                 node['configuration'] = node['warp_configuration']
                 node['configuration']['remote_config'] = warped_node_cfg
 
                 self._logger.info(f'{node_name} warped')
                 self._logger.info(node)
 
-            _node: Node = _component_builder.build_component(
+            _node: Node = _builder.build_node(
                 node,
-                plugin_dirs=self._raw_config['plugins'],
                 pipe_name=self.name,
             )
 
