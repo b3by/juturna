@@ -1,6 +1,6 @@
 import pathlib
 
-from juturna.components import _component_builder
+from juturna.components import _builder
 from juturna.components._node import Node
 from juturna.names import ComponentStatus
 
@@ -51,9 +51,8 @@ def _standalone_builder(
     node_runtime_folder = pathlib.Path(REMOTE_PIPE_FOLDER, context_runtime_path)
     node_runtime_folder.mkdir(exist_ok=True, parents=True)
 
-    _node: Node = _component_builder.build_component(
+    _node: Node = _builder.build_node(
         node,
-        plugin_dirs=[plugin_dir],
         pipe_name=context_runtime_path,
     )
 
