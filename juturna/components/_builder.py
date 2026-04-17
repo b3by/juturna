@@ -9,16 +9,19 @@ from juturna.meta._constants import JUTURNA_ENV_VAR_PREFIX
 from juturna.components._synchronisers import _SYNCHRONISERS
 
 
-_JT_EXT_PREFIX = 'juturna.'
+_JT_BUILTIN_PREFIX = 'juturna.nodes'
+_JT_EXTENSION_PREFIX = 'juturna'
 
 _logger = jt_logger('builder')
 
 
 def build_node(node: dict, pipe_name: str):
     node_full_path = node['type']
-    node_name = node_full_path.split('.')[-1]
-    node_sync = node.get('sync')
     node_configuration = node['configuration']
+    node_sync = node.get('sync')
+
+    node_name = node_full_path.split('.')[-1]
+
     node_class, default_config = _resolve_node(node_full_path)
     default_args = default_config['arguments']
 
@@ -59,11 +62,15 @@ def build_node(node: dict, pipe_name: str):
 def _resolve_node(node_full_path: str) -> str:
     node_name = node_full_path.split('.')[-1]
     node_path = '.'.join(node_full_path.split('.')[:-1])
+    node_header = node_path.split('.')[0]
 
-    if node_path.split('.')[0] in ['extensions', 'contrib']:
-        node_path = _JT_EXT_PREFIX + node_path
-    else:
-        node_path = _JT_EXT_PREFIX + 'nodes.' + node_path
+    prefix = (
+        _JT_EXTENSION_PREFIX
+        if node_header in ['extensions', 'contrib']
+        else _JT_BUILTIN_PREFIX
+    )
+
+    node_path = '.'.join((prefix, node_path))
 
     node_module = importlib.import_module(node_path)
     node_class = getattr(node_module, node_name)
@@ -95,6 +102,7 @@ def _resolve_env_var(
             f'for config key "{key}" (found in config but not in environment)'
         )
         _logger.error(error_msg)
+
         raise ValueError(error_msg)
 
     return get_env_var(env_var_name, default_value)
