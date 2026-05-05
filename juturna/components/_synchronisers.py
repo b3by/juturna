@@ -1,17 +1,33 @@
-from collections.abc import Callable
+import collections
+
+from juturna.components import Message
+from juturna.payloads import Batch
+from juturna.components._buffer import Buffer
 
 
-def passthrough(sources: dict) -> dict:
-    """
-    Relay every message as soon as it is available
-
-    This synchroniser simply marks every message stored in `source` as to be
-    delivered, regardless of number, timestamp, or creator.
-    """
-    return {source: list(range(len(sources[source]))) for source in sources}
+class SynchroniserStrategy:
+    def has_data(self, buf: Buffer): ...
+    def get_data(self) -> Message[Batch] | None: ...
 
 
-_SYNCHRONISERS: dict[str, Callable | None] = {
-    'passthrough': passthrough,
+class PassthroughSynchroniser(SynchroniserStrategy):
+    def has_data(self, buf: Buffer):
+        return any(map(lambda d: len(d), buf._data))
+
+    def get_data(
+        self, data: dict[str, collections.deque[Message]]
+    ) -> Message[Batch]:
+        for source in data:
+            if len(data[source]):
+                return Message[Batch](
+                    creator=source,
+                    payload=Batch(messages=(data[source.popleft()])),
+                )
+
+        return None
+
+
+_SYNCHRONISERS: dict[str, collections.abc.Callable | None] = {
+    'passthrough': PassthroughSynchroniser,
     'local': None,
 }

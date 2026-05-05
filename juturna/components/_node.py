@@ -11,9 +11,6 @@ from collections.abc import Callable
 from typing import Any
 
 from juturna.components import Message
-from juturna.payloads import ControlPayload
-from juturna.payloads import ControlSignal
-
 from juturna.names import ComponentStatus
 from juturna.utils.log_utils import jt_logger
 
@@ -23,7 +20,7 @@ from juturna.meta import JUTURNA_TELEMETRY_BATCH_SIZE
 
 from juturna.components._buffer import Buffer
 from juturna.components._telemetry_manager import TelemetryManager
-from juturna.components._synchronisers import _SYNCHRONISERS
+from juturna.components._synchronisers import SynchroniserStrategy
 
 
 class Node[T_Input, T_Output]:
@@ -37,7 +34,7 @@ class Node[T_Input, T_Output]:
         self,
         node_name: str = '',
         pipe_name: str = '',
-        synchroniser: Callable | None = None,
+        synchroniser: SynchroniserStrategy | None = None,
     ):
         """
         Parameters
@@ -63,14 +60,11 @@ class Node[T_Input, T_Output]:
         self._logger.propagate = True
 
         self._queue = queue.Queue(maxsize=JUTURNA_MAX_QUEUE_SIZE)
-        self._worker_thread: threading.Thread | None = None
         self._source_thread: threading.Thread | None = None
-        self._update_thread: threading.Thread | None = None
+        self._worker_thread: threading.Thread | None = None
 
         self._stop_worker_event = threading.Event()
         self._stop_source_event = threading.Event()
-        self._stop_update_event = threading.Event()
-
         self._draining = threading.Event()
 
         self._pending_updates = 0
@@ -79,15 +73,9 @@ class Node[T_Input, T_Output]:
         self._suspended = False
         self._auto_dump = False
 
-        # buffer stores messages, policy manages them
-        # if the synchroniser is not provided, get local one or default
-        self._synchroniser = synchroniser or (
-            self.next_batch
-            if hasattr(self, 'next_batch')
-            else _SYNCHRONISERS['passthrough']
-        )
+        self._synchroniser = synchroniser
 
-        self._buffer = Buffer(_logger_name, self._synchroniser)
+        self._buffer = Buffer(_logger_name)
 
         self._source_f: Callable | None = None
         self._source_sleep = -1
@@ -184,10 +172,12 @@ class Node[T_Input, T_Output]:
     def link_telemetry(self, manager: TelemetryManager):
         self._telemetry_manager = manager
 
-    def put(self, message: Message | ControlSignal):
+    def put(self, message: Message):
         if self._draining.is_set():
             self._logger.debug('message received while draining, discarding...')
+
             return
+
         self._queue.put(message)
 
     def compile_template(self, template_name: str, arguments: dict) -> str:
@@ -313,7 +303,7 @@ class Node[T_Input, T_Output]:
     def clear_buffer(self):
         self._buffer.flush()
 
-    def transmit(self, message: Message[T_Output] | ControlSignal):
+    def transmit(self, message: Message[T_Output]):
         """
         Transmit a message. This method is used to send data from the node to
         its destinations. Messages are frozen before transmission, so that
@@ -347,6 +337,7 @@ class Node[T_Input, T_Output]:
         the node is started correctly.
         """
         self._draining.clear()
+
         if self._worker_thread is None:
             self._worker_thread = threading.Thread(
                 name=f'_worker_{self.name}',
@@ -358,28 +349,17 @@ class Node[T_Input, T_Output]:
             self._worker_thread.start()
             self._status = ComponentStatus.RUNNING
 
-        if self._update_thread is None:
-            self._update_thread = threading.Thread(
-                name=f'_update_{self.name}',
-                target=self._update,
-                args=(),
-                daemon=True,
-            )
-
-            self._update_thread.start()
-
-        if self._source_f is None:
+        if self._source_f is None or self._source_thread is not None:
             return
 
-        if self._source_thread is None:
-            self._source_thread = threading.Thread(
-                name=f'_source_{self.name}',
-                target=self._source,
-                args=(),
-                daemon=True,
-            )
+        self._source_thread = threading.Thread(
+            name=f'_source_{self.name}',
+            target=self._source,
+            args=(),
+            daemon=True,
+        )
 
-            self._source_thread.start()
+        self._source_thread.start()
 
     def stop(self):
         """
@@ -392,15 +372,11 @@ class Node[T_Input, T_Output]:
             return
 
         self._draining.set()
-        self._stop_worker_event.set()
         self._stop_source_event.set()
-        self._stop_update_event.set()
 
         self.join()
 
-        self._worker_thread = None
         self._source_thread = None
-        self._update_thread = None
         self._status = ComponentStatus.STOPPED
 
         self._logger.info('node stopped')
@@ -414,14 +390,10 @@ class Node[T_Input, T_Output]:
         with self._pending_condition:
             self._pending_condition.wait_for(lambda: self._pending_updates == 0)
 
-        current_thread = threading.current_thread()
-        for _t in [
-            self._source_thread,
-            self._worker_thread,
-            self._update_thread,
-        ]:
-            if _t is not None and _t.is_alive() and _t is not current_thread:
-                _t.join(timeout=JUTURNA_THREAD_JOIN_TIMEOUT)
+        _this_t = threading.current_thread()
+
+        if self._source_thread is not None and self._source_thread != _this_t:
+            self._source_thread.join(timeout=JUTURNA_THREAD_JOIN_TIMEOUT)
 
     def configure(self): ...
 
@@ -433,12 +405,6 @@ class Node[T_Input, T_Output]:
 
     def destroy(self): ...
 
-    def _handle_control(self, message: Message):
-        _control_thread = threading.Thread(
-            target=self._control, args=(message,), daemon=True
-        )
-        _control_thread.start()
-
     def _worker(self):
         while not self._stop_worker_event.is_set():
             try:
@@ -446,40 +412,29 @@ class Node[T_Input, T_Output]:
             except queue.Empty:
                 continue
 
-            if self._suspended and not isinstance(
-                message.payload, ControlPayload
-            ):
+            if self._suspended:
                 self.transmit(message)
-                continue
-
-            self._buffer.put(message)
-
-            if isinstance(message, Message):
                 self._rec_telemetry(message, 'rx')
 
-    def _update(self):
-        while not self._stop_update_event.is_set():
-            try:
-                batch = self._buffer.get(timeout=JUTURNA_THREAD_JOIN_TIMEOUT)
-            except queue.Empty:
                 continue
 
-            if isinstance(batch, Message) and isinstance(
-                batch.payload, ControlPayload
-            ):
-                self._handle_control(batch)
-                if batch.payload.signal < 0:
-                    break
+            self._buffer.append_data(message)
+
+            if not self._synchroniser.has_data(self._buffer):
                 continue
 
-            self._last_data_source_evt_id = batch.id
+            _batch = self._synchroniser.get_data(self._buffer)
+            self._last_data_source_evt_id = _batch.id
+
             with self._pending_condition:
                 self._pending_updates += 1
+
             try:
-                self.update(batch)
+                self.update(_batch)
             finally:
                 with self._pending_condition:
                     self._pending_updates -= 1
+
                     if self._pending_updates == 0:
                         self._pending_condition.notify_all()
 
@@ -490,15 +445,6 @@ class Node[T_Input, T_Output]:
 
             message = self._source_f()
 
-            if (
-                isinstance(message.payload, ControlPayload)
-                and message.payload.signal < 0
-            ):
-                self._stop_source_event.set()
-                self.put(message)
-
-                continue
-
             if self._stop_source_event.is_set():
                 return
 
@@ -506,36 +452,6 @@ class Node[T_Input, T_Output]:
                 time.sleep(self._source_sleep)
 
             self.put(message)
-
-    def _control(self, message: Message):
-        if message.payload.signal < 0:
-            self.stop()
-
-        match message.payload.signal:
-            case ControlSignal.STOP_PROPAGATE:
-                self._logger.warning(
-                    'the stop propagate signal is deprecated, use STOP instead'
-                )
-                self.transmit(message)
-                return
-            case ControlSignal.STOP:
-                return
-            case ControlSignal.START:
-                self.start()
-
-                return
-            case ControlSignal.SUSPEND:
-                self._suspended = True
-                self._logger.info('node suspended')
-
-                return
-            case ControlSignal.RESUME:
-                self._suspended = False
-                self._logger.info('node resumed')
-
-                return
-            case None:
-                return
 
     def _rec_telemetry(self, message: Message, event: str):
         if self._telemetry_manager is None:
