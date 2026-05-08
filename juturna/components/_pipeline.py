@@ -36,16 +36,17 @@ class Pipeline:
             nodes, and links.
 
         """
-        self._raw_config = copy.deepcopy(config)
-        self._name = self._raw_config['pipeline']['name']
-        self._pipe_id = self._raw_config['pipeline']['id']
-        self._pipe_path = self._raw_config['pipeline']['folder']
+        self.name = self._raw_config['pipeline']['name']
+        self.pipe_id = self._raw_config['pipeline']['id']
+        self.pipe_path = self._raw_config['pipeline']['folder']
+        self.dag: DAG = DAG()
 
+        self._raw_config = copy.deepcopy(config)
         self._logger = jt_logger(self._name)
 
         self._nodes: dict[str, Node] = dict()
         self._links: list = list()
-        self._dag: DAG = DAG()
+        self._state_store: dict[str, dict] = dict()
 
         self._telemetry_manager: TelemetryManager | None = None
         self._telemetry = False
@@ -77,18 +78,6 @@ class Pipeline:
         return Pipeline(config)
 
     @property
-    def pipe_id(self) -> str:
-        return self._pipe_id
-
-    @property
-    def pipe_path(self) -> str:
-        return self._pipe_path
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
     def status(self) -> dict:
         return {
             'pipe_id': self.pipe_id,
@@ -101,10 +90,6 @@ class Pipeline:
             if self._nodes
             else dict(),
         }
-
-    @property
-    def DAG(self) -> DAG:
-        return self._dag
 
     def warmup(self):
         """
@@ -153,14 +138,14 @@ class Pipeline:
                 pipe_name=self.name,
             )
 
-            _node.pipe_id = copy.deepcopy(self._pipe_id)
+            _node.pipe_id = copy.deepcopy(self.pipe_id)
             _node.pipe_path = node_folder
             _node.status = ComponentStatus.NEW
             _node.telemetry = self._telemetry
             _node._auto_dump = node.get('auto_dump', False)
 
             self._nodes[node_name] = _node
-            self._dag.add_node(node_name)
+            self.dag.add_node(node_name)
 
         for link in links:
             from_node = link['from']
@@ -173,7 +158,7 @@ class Pipeline:
             self._nodes[to_node].origins.append(from_node)
 
             self._links.append(copy.copy(link))
-            self._dag.add_edge(from_node, to_node)
+            self.dag.add_edge(from_node, to_node)
 
         for node_name, node in self._nodes.items():
             node.warmup()
@@ -217,7 +202,7 @@ class Pipeline:
         if self._telemetry:
             self._telemetry_manager.start()
 
-        for layer in self._dag.BFS()[::-1]:
+        for layer in self.dag.BFS()[::-1]:
             for node_name in layer:
                 self._logger.info(f'starting node {node_name}')
 
@@ -241,7 +226,7 @@ class Pipeline:
         if not self._nodes:
             raise RuntimeError(f'pipeline {self.name} is not configured')
 
-        for layer in self._dag.BFS():
+        for layer in self.dag.BFS():
             self._logger.info(f'stopping layer {layer}')
             for node_name in layer:
                 self._logger.info(f'stopping node {node_name}')

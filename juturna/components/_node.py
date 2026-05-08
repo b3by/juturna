@@ -47,42 +47,46 @@ class Node[T_Input, T_Output]:
             Management options for multi-input nodes.
 
         """
-        self._name = node_name
-        self._status: ComponentStatus | None = None
-        self._session_id: str | None = None
-        self._pipe_path: str | None = None
-        self._pipe_name: str | None = pipe_name
-
+        self.name = node_name
+        self.pipe_name: str | None = pipe_name
+        self.pipe_path: str | None = None
         self.pipe_id: str | None = None
+        self.pipe_path: str | None = None
+        self.static_path = pathlib.Path(inspect.getfile(self.__class__)).parent
 
-        _logger_name = f'{self.pipe_name}.{self._name}'
+        self._status: ComponentStatus | None = None
+
+        _logger_name = f'{self.pipe_name}.{self.name}'
         self._logger = jt_logger(_logger_name)
         self._logger.propagate = True
 
         self._queue = queue.Queue(maxsize=JUTURNA_MAX_QUEUE_SIZE)
+
         self._source_thread: threading.Thread | None = None
         self._worker_thread: threading.Thread | None = None
-
         self._stop_worker_event = threading.Event()
         self._stop_source_event = threading.Event()
-        self._draining = threading.Event()
 
+        self._draining = threading.Event()
         self._pending_updates = 0
         self._pending_condition = threading.Condition()
 
         self._suspended = False
         self._auto_dump = False
 
-        self._synchroniser = synchroniser
-
-        self._buffer = Buffer(_logger_name)
+        self._synchroniser: SynchroniserStrategy | None = synchroniser
+        self._buffer: Buffer | None = (
+            Buffer(_logger_name) if self._synchroniser else None
+        )
+        self._state: dict | None = None
+        self._state_lock = threading.Lock()
 
         self._source_f: Callable | None = None
         self._source_sleep = -1
         self._source_mode = ''
 
+        self.origins: list = list()
         self._destinations: dict[str, Node] = dict()
-        self._origins: list = list()
         self._last_data_source_evt_id: int | None = None
 
         self._telemetry_buffer = list()
@@ -91,79 +95,20 @@ class Node[T_Input, T_Output]:
     def __del__(self): ...
 
     @property
-    def name(self) -> str | None:
-        """The node symbolic name"""
-        return self._name
-
-    @name.setter
-    def name(self, name: str):
-        self._name = name
-
-    @property
     def status(self) -> ComponentStatus | None:
         return self._status
-
-    @property
-    def configuration(self) -> dict:
-        return {'name': self.name, 'session_id': self.pipe_id}
 
     @status.setter
     def status(self, new_status: ComponentStatus):
         self._status = ComponentStatus(new_status)
 
     @property
-    def pipe_name(self) -> str | None:
-        """
-        Id of the pipe the node belongs to. This will automatically be
-        assigned to the node when it is intantiated within a pipeline, but can
-        also be set manually. An isolated node not included within a pipeline
-        will have a ``None`` value for this field.
-        """
-        return self._pipe_name
-
-    @pipe_name.setter
-    def pipe_name(self, pipe_name: str):
-        self._pipe_name = pipe_name
-
-    @property
-    def pipe_path(self) -> str | None:
-        """
-        Path to the pipeline session directory. The node has a dedicated folder
-        within the pipeline session directory where it stores its data. This
-        will automatically be assigned to the node when it is intantiated within
-        a pipeline, but can also be set manually. An isolated node not included
-        within a pipeline will have a ``None`` value for this field.
-        """
-        return self._pipe_path
-
-    @pipe_path.setter
-    def pipe_path(self, session_path: str):
-        self._pipe_path = session_path
-
-    @property
-    def static_path(self) -> pathlib.Path:
-        """
-        Path to the directory where the node is defined. This is useful for
-        storing static files (e.g. configuration files) that are needed by the
-        node.
-        """
-        return pathlib.Path(inspect.getfile(self.__class__)).parent
+    def configuration(self) -> dict:
+        return {'name': self.name, 'session_id': self.pipe_id}
 
     @property
     def logger(self) -> logging.Logger:
         return self._logger
-
-    @property
-    def synchroniser(self) -> Callable:
-        return self._synchroniser
-
-    @synchroniser.setter
-    def synchroniser(self, synchroniser: Callable):
-        self._synchroniser = synchroniser
-
-    @property
-    def origins(self) -> list:
-        return self._origins
 
     @property
     def destinations(self) -> list:
@@ -171,6 +116,9 @@ class Node[T_Input, T_Output]:
 
     def link_telemetry(self, manager: TelemetryManager):
         self._telemetry_manager = manager
+
+    def link_state(self, state_dict_ref: dict):
+        self._state = state_dict_ref
 
     def put(self, message: Message):
         if self._draining.is_set():
@@ -397,7 +345,7 @@ class Node[T_Input, T_Output]:
 
     def configure(self): ...
 
-    def update(self, message: Message[T_Input]): ...
+    def update(self, message: Message[T_Input], state: dict | None = None): ...
 
     def set_on_config(self, prop: str, value: Any): ...
 
@@ -430,7 +378,7 @@ class Node[T_Input, T_Output]:
                 self._pending_updates += 1
 
             try:
-                self.update(_batch)
+                self.update(_batch, self._state)
             finally:
                 with self._pending_condition:
                     self._pending_updates -= 1
