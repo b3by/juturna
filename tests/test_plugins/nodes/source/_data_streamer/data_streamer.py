@@ -12,6 +12,7 @@ import numpy as np
 
 from juturna.components import Node
 from juturna.components import Message
+from juturna.components import State
 
 from juturna.payloads import BytesPayload
 
@@ -58,7 +59,7 @@ class DataStreamer(Node[None, BytesPayload]):
     def stop(self):
         super().stop()
 
-    def update(self, message: Message[BytesPayload]):
+    def update(self, message: Message[BytesPayload], state: State):
         self.transmit(message)
         self.dump_json(message, f'message_{self._transmitted}.json')
 

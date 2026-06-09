@@ -7,10 +7,9 @@ Crasher
 
 Test sink node. Accumulate received messages.
 """
-import typing
-
 from juturna.components import Node
 from juturna.components import Message
+from juturna.components import State
 
 from juturna.payloads import BasePayload
 
@@ -27,5 +26,5 @@ class Crasher(Node[BasePayload, None]):
     def stop(self):
         super().stop()
 
-    def update(self, message: Message[BasePayload]):
+    def update(self, message: Message[BasePayload], state: State):
         self.messages.append(message)

@@ -21,6 +21,7 @@ from juturna.meta import JUTURNA_MAX_QUEUE_SIZE
 from juturna.meta import JUTURNA_TELEMETRY_BATCH_SIZE
 
 from juturna.components._buffer import Buffer
+from juturna.components._state import State
 from juturna.components._telemetry_manager import TelemetryManager
 from juturna.components._synchronisers import _SYNCHRONISERS
 
@@ -65,6 +66,7 @@ class Node[T_Input, T_Output]:
         )
 
         self._status: ComponentStatus | None = None
+        self._state: State | None = None
 
         self._queue = queue.Queue(maxsize=JUTURNA_MAX_QUEUE_SIZE)
         self._worker_thread: threading.Thread | None = None
@@ -129,6 +131,9 @@ class Node[T_Input, T_Output]:
 
     def link_telemetry(self, manager: TelemetryManager):
         self._telemetry_manager = manager
+
+    def link_state(self, state: State):
+        self._state = state
 
     def put(self, message: Message | ControlSignal):
         if self._draining.is_set():
@@ -372,7 +377,7 @@ class Node[T_Input, T_Output]:
 
     def configure(self): ...
 
-    def update(self, message: Message[T_Input]): ...
+    def update(self, message: Message[T_Input], state: State): ...
 
     def set_on_config(self, prop: str, value: Any): ...
 
@@ -415,18 +420,22 @@ class Node[T_Input, T_Output]:
                 batch.payload, ControlPayload
             ):
                 self._handle_control(batch)
+
                 if batch.payload.signal < 0:
                     break
+
                 continue
 
             self._last_data_source_evt_id = batch.id
+
             with self._pending_condition:
                 self._pending_updates += 1
             try:
-                self.update(batch)
+                self.update(batch, self._state)
             finally:
                 with self._pending_condition:
                     self._pending_updates -= 1
+
                     if self._pending_updates == 0:
                         self._pending_condition.notify_all()
 
