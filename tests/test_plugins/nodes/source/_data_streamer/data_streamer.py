@@ -52,9 +52,6 @@ class DataStreamer(Node[None, BytesPayload]):
             )
         )
 
-    def init_state(self, state: State):
-        state['transmitted'] = 0
-
     def start(self):
         super().start()
 
@@ -62,13 +59,13 @@ class DataStreamer(Node[None, BytesPayload]):
         super().stop()
 
     def update(self, message: Message[BytesPayload], state: State):
-        trx = state['transmitted']
+        trx = state.get('transmitted', 0)
         message.version = trx
 
         self.transmit(message)
         self.dump_json(message, f'message_{trx}.json')
 
-        state['transmitted'] += 1
+        state['transmitted'] = trx + 1
 
     @staticmethod
     def generate_stream(sample_length_sec: int, sample_rate: int) -> bytes:

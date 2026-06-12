@@ -14,6 +14,7 @@ import typing
 
 from juturna.components import Node
 from juturna.components import Message
+from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 
@@ -83,7 +84,7 @@ class NotifierUDP(Node[ObjectPayload, None]):
         elif prop == 'port':
             self._address[1] = value
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], state: State):
         """Receive a message, transmit a message"""
         chunks = self._prepare_chunks(message, message.version)
 

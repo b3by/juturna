@@ -88,7 +88,7 @@ def test_pipeline_draining_on_stop(test_config, wait_for_condition):
     pipeline.warmup()
     pipeline.start()
 
-    wait_for_condition(lambda: pipeline._node_state_store['0_stream']['transmitted'] > 10, timeout=5)
+    wait_for_condition(lambda: pipeline._node_state_store['0_stream'].get('transmitted', 0) > 10, timeout=5)
     sent_count = pipeline._node_state_store['0_stream']['transmitted']
     pipeline.stop()
 
@@ -140,7 +140,7 @@ def test_pipeline_immediate_stop(test_config, wait_for_condition):
     pipeline.warmup()
     pipeline.start()
 
-    wait_for_condition(lambda: pipeline._node_state_store['0_stream']['transmitted'] > 10, timeout=5)
+    wait_for_condition(lambda: pipeline._node_state_store['0_stream'].get('transmitted', 0) > 10, timeout=5)
     sent_count = pipeline._node_state_store['0_stream']['transmitted']
 
     received_messages = pipeline._nodes['2_sink'].messages

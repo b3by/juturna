@@ -15,9 +15,11 @@ import contextlib
 
 import numpy as np
 
-from juturna.components import _resource_broker as rb
 from juturna.components import Message
 from juturna.components import Node
+from juturna.components import State
+from juturna.components import _resource_broker as rb
+
 from juturna.payloads import BytesPayload, AudioPayload
 from juturna.names import ComponentStatus
 
@@ -79,7 +81,6 @@ class AudioRTP(Node[BytesPayload, AudioPayload]):
             * self._block_size
             * self._audio_rate
         )
-        self._abs_recv = 0
 
         # infer incoming channel by encoding_clock_chan
         self._in_channels = AudioRTP._parse_audio_channels(encoding_clock_chan)
@@ -212,7 +213,7 @@ class AudioRTP(Node[BytesPayload, AudioPayload]):
 
         return base_config
 
-    def update(self, message: Message[BytesPayload]):
+    def update(self, message: Message[BytesPayload], state: State):
         """Read a message, return a message"""
         if not self._subprocess_running:
             return
@@ -221,24 +222,26 @@ class AudioRTP(Node[BytesPayload, AudioPayload]):
             message.payload.cnt, self._in_channels
         )
 
+        _abs_recv = state.get('abs_recv', 0)
+
         to_send = Message[AudioPayload](
             creator=self.name,
-            version=self._abs_recv,
+            version=_abs_recv,
             payload=AudioPayload(
                 audio=waveform,
                 sampling_rate=self._audio_rate,
                 channels=self._channels,
-                start=self._block_size * self._abs_recv,
-                end=self._block_size * self._abs_recv + self._block_size,
+                start=self._block_size * _abs_recv,
+                end=self._block_size * _abs_recv + self._block_size,
             ),
         )
 
-        to_send.meta['source_recv'] = self._abs_recv
+        to_send.meta['source_recv'] = _abs_recv
 
         self.transmit(to_send)
         self.logger.info(f'transmitting message {to_send.version}')
 
-        self._abs_recv += 1
+        state['abs_recv'] = _abs_recv + 1
 
     def clear_source(self):
         """Clear any source functions defined on the node"""
