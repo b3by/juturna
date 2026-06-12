@@ -20,6 +20,7 @@ from faster_whisper import WhisperModel
 
 from juturna.components import Message
 from juturna.components import Node
+from juturna.components import State
 
 from juturna.payloads import AudioPayload
 from juturna.payloads import ObjectPayload
@@ -92,7 +93,7 @@ class TranscriberWhispy(Node[AudioPayload, ObjectPayload]):
 
         self.logger.info(f'warmup sources: {self.origins}')
 
-    def update(self, message: Message[AudioPayload]):
+    def update(self, message: Message[AudioPayload], state: State):
         """Receive data from upstream, transmit data downstream"""
         self.logger.info(f'received {message.version}')
 

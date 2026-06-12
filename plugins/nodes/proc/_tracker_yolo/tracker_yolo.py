@@ -12,6 +12,7 @@ from ultralytics import YOLO
 
 from juturna.components import Message
 from juturna.components import Node
+from juturna.components import State
 
 from juturna.payloads import ImagePayload
 
@@ -69,7 +70,7 @@ class TrackerYolo(Node[ImagePayload, ImagePayload]):
 
         self.logger.info('tracker ready')
 
-    def update(self, message: Message[ImagePayload]):
+    def update(self, message: Message[ImagePayload], state: State):
         """Receive a message, transmit a message"""
         image = message.payload.image
         results = self._model.predict(

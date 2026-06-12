@@ -19,6 +19,7 @@ import numpy as np
 
 from juturna.components import Node
 from juturna.components import Message
+from juturna.components import State
 
 from juturna.payloads import AudioPayload
 from juturna.payloads import ObjectPayload
@@ -100,7 +101,7 @@ class TranscriberParakeet(Node[AudioPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[AudioPayload]):
+    def update(self, message: Message[AudioPayload], state: State):
         """Receive data from upstream, transmit data downstream"""
         self.logger.info(f'trx received {message.version}')
 

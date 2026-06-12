@@ -11,6 +11,7 @@ import pymongo
 
 from juturna.components import Message
 from juturna.components import Node
+from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 
@@ -59,7 +60,7 @@ class NotifierMongo(Node[ObjectPayload, None]):
 
         self.logger.info(f'[{self.name}] set to endpoint {self._endpoint}')
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], state: State):
         """Receive a message, transmit a message"""
         message = message.to_dict()
         message['session_id'] = self.pipe_id

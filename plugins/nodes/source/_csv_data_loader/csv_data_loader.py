@@ -12,6 +12,7 @@ import csv
 
 from juturna.components import Node
 from juturna.components import Message
+from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 from juturna.payloads import ControlSignal
@@ -101,7 +102,7 @@ class CsvDataLoader(Node[ObjectPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], state: State):
         """Receive data from upstream, transmit data downstream"""
         self.logger.info(f'transmitting {message}')
         self.transmit(message)
