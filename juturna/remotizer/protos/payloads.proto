@@ -143,6 +143,9 @@ message ProtoEnvelope {
   // Intended receiver identifier
   string receiver = 4;
 
+  // Original pipe id
+  string pipe_id = 5;
+
   // Response-to field: ID of the envelope this is responding to
   // Enables explicit request/response tracking
   string response_to = 6;

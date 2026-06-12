@@ -9,7 +9,7 @@ from concurrent import futures
 
 import grpc
 
-from juturna.components import Message, Node
+from juturna.components import Message, Node, State
 from juturna.remotizer._remote_context import RequestContext
 from juturna.remotizer._remote_builder import _standalone_builder
 
@@ -72,6 +72,8 @@ class MessagingServiceImpl(messaging_service_pb2_grpc.MessagingServiceServicer):
             daemon=True,
         )
         self._cleanup_thread.start()
+
+        self._pipe_state_store = dict()
 
         logger.info(f'Service initialized for node {node.name}')
 
@@ -145,6 +147,13 @@ class MessagingServiceImpl(messaging_service_pb2_grpc.MessagingServiceServicer):
             tracking_id = next(self._tracking_id_counter)
             sender = envelope_dict.get('sender')
             envelope_id = envelope_dict.get('id')
+            pipe_id = envelope_dict['pipe_id']
+
+            if self._pipe_state_store.get(pipe_id, None) is None:
+                self._pipe_state_store[pipe_id] = State()
+
+            # pass the state reference to the node
+            self.node.link_state(self._pipe_state_store[pipe_id])
 
             if not sender:
                 raise ValueError('Missing sender in request envelope')
@@ -189,9 +198,13 @@ class MessagingServiceImpl(messaging_service_pb2_grpc.MessagingServiceServicer):
 
             proto_response = message_to_proto(response_message)
 
+            state_deltas = self._pipe_state_store[pipe_id]
+            logger.info(f'deltas for {pipe_id}: {state_deltas}')
+
             response_envelope = create_envelope(
                 message=proto_response,
                 creator=self.remote_name,
+                pipe_id=pipe_id,
                 configuration={},
                 metadata={
                     'processing_time': time.time() - request_context.created_at

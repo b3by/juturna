@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package juturna.proto.state_delta;
+
+import "google/protobuf/struct.proto";
+
+message DeltaProto {
+    enum Action {
+        SET = 0;
+        DEL = 1;
+    }
+    Action action = 1;
+    string key = 2;
+    google.protobuf.Value value = 3;
+}
+
+message StateDeltasProto {
+    string node_id = 1;
+    repeated DeltaProto deltas = 2;
+}

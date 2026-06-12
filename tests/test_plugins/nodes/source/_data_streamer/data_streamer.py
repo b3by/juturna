@@ -31,7 +31,6 @@ class DataStreamer(Node[None, BytesPayload]):
         self._rate_variance = rate_variance
         self._rate = rate
 
-        self._transmitted = 0
         self._transmitting = True
 
         self.set_source(self._generate, by=1/self._rate, mode='pre')
@@ -47,11 +46,14 @@ class DataStreamer(Node[None, BytesPayload]):
 
         return Message[BytesPayload](
             creator=self.name,
-            version=self._transmitted,
+            version=-1,
             payload=BytesPayload(
                 cnt=DataStreamer.generate_stream(num_bytes)
             )
         )
+
+    def init_state(self, state: State):
+        state['transmitted'] = 0
 
     def start(self):
         super().start()
@@ -60,14 +62,13 @@ class DataStreamer(Node[None, BytesPayload]):
         super().stop()
 
     def update(self, message: Message[BytesPayload], state: State):
+        trx = state['transmitted']
+        message.version = trx
+
         self.transmit(message)
-        self.dump_json(message, f'message_{self._transmitted}.json')
+        self.dump_json(message, f'message_{trx}.json')
 
-        self._transmitted += 1
-
-    @property
-    def transmitted_count(self):
-        return self._transmitted
+        state['transmitted'] += 1
 
     @staticmethod
     def generate_stream(sample_length_sec: int, sample_rate: int) -> bytes:

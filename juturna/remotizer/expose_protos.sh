@@ -10,6 +10,7 @@ protol\
   --create-package \
   --in-place \
   --python-out $OUT_DIR \
-  protoc --proto-path=$PROTO_DIR payloads.proto messaging_service.proto
+  protoc --proto-path=$PROTO_DIR \
+  payloads.proto messaging_service.proto state_delta.proto
 
 echo "protobuf compilation exposed!"
