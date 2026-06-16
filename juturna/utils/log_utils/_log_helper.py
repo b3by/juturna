@@ -12,6 +12,7 @@ class _JuturnaLogger:
         self._root_handler.setFormatter(
             _formatters._FORMATTERS[self._root_formatter_name]
         )
+        self._root_handler.addFilter(JuturnaPipelineFilter())
         self._root_logger.addHandler(self._root_handler)
         self._root_logger.propagate = False
 
@@ -36,6 +37,28 @@ class _JuturnaLogger:
             handler.setFormatter(fmt)
 
 
+class JuturnaPipelineFilter(logging.Filter):
+    _REGISTRY = {}
+
+    @classmethod
+    def register_pipeline(cls, pipe_name: str, extras: dict):
+        cls._REGISTRY[pipe_name] = extras or dict()
+
+    def filter(self, record):
+        parts = record.name.split('.')
+
+        if len(parts) >= 2 and parts[0] == 'jt':
+            pipe_name = parts[1]
+
+            extras = self._REGISTRY.get(pipe_name, dict())
+
+            for key, value in extras.items():
+                if not hasattr(record, key):
+                    setattr(record, key, value)
+
+        return True
+
+
 _JT_LOGGER = _JuturnaLogger()
 
 
@@ -51,6 +74,10 @@ def formatter(formatter_name: str = '') -> str | None:
     return _JT_LOGGER._formatter(formatter_name)
 
 
+def add_formatter(name: str, formatter: logging.Formatter):
+    _formatters._FORMATTERS[name] = formatter
+
+
 def add_handler(
     handler: logging.Handler, formatter: str | logging.Formatter = ''
 ):
@@ -61,4 +88,9 @@ def add_handler(
     )
 
     handler.setFormatter(formatter)
+    handler.addFilter(JuturnaPipelineFilter())
     jt_logger().addHandler(handler)
+
+
+def add_extra(logger_name: str, extra: dict):
+    JuturnaPipelineFilter.register_pipeline(logger_name, extra)
