@@ -5,6 +5,7 @@ from juturna.utils.log_utils._log_helper import formatters
 from juturna.utils.log_utils._log_helper import add_handler
 from juturna.utils.log_utils._log_helper import add_formatter
 from juturna.utils.log_utils._log_helper import add_extra
+from juturna.utils.log_utils._log_helper import drop_extra
 from juturna.utils.log_utils._log_helper import JuturnaPipelineFilter
 
 from juturna.utils.log_utils._formatters import JsonFormatter
@@ -19,6 +20,7 @@ __all__ = [
     'add_handler',
     'add_formatter',
     'add_extra',
+    'drop_extra',
     'JsonFormatter',
     'ColoredFormatter',
     'JuturnaFormatter',

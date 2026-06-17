@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from juturna.utils.log_utils import _formatters
 
@@ -38,11 +39,54 @@ class _JuturnaLogger:
 
 
 class JuturnaPipelineFilter(logging.Filter):
-    _REGISTRY = {}
+    _REGISTRY = dict()
+    _RESERVED = [
+        'args',
+        'created',
+        'exc_info',
+        'exc_text',
+        'filename',
+        'funcName',
+        'getMessage',
+        'levelname',
+        'levelno',
+        'lineno',
+        'module',
+        'msecs',
+        'msg',
+        'name',
+        'pathname',
+        'process',
+        'processName',
+        'relativeCreated',
+        'stack_info',
+        'taskName',
+        'thread',
+        'threadName',
+    ]
 
     @classmethod
     def register_pipeline(cls, pipe_name: str, extras: dict):
+        # if any(map(lambda x: x in cls._RESERVED, extras.keys())):
+        if res := [k for k in extras if k in cls._RESERVED]:
+            warnings.warn(
+                f'cannot register extras for {pipe_name}: '
+                f'extras contain reserved keys: {res}',
+                stacklevel=1,
+            )
+
+            return
+
         cls._REGISTRY[pipe_name] = extras or dict()
+
+    @classmethod
+    def unregister_pipeline(cls, pipe_name: str):
+        if pipe_name in cls._REGISTRY:
+            del cls._REGISTRY[pipe_name]
+
+    @classmethod
+    def reserved(cls) -> list:
+        return cls._RESERVED
 
     def filter(self, record):
         parts = record.name.split('.')
@@ -94,3 +138,7 @@ def add_handler(
 
 def add_extra(logger_name: str, extra: dict):
     JuturnaPipelineFilter.register_pipeline(logger_name, extra)
+
+
+def drop_extra(logger_name: str):
+    JuturnaPipelineFilter.unregister_pipeline(logger_name)
