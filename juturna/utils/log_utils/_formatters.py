@@ -53,6 +53,24 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(log_obj, default=str)
 
 
+class JuturnaFormatter(logging.Formatter):
+    def format(self, record):
+        class SafeRecordDict(dict):
+            def __getitem__(self, key):
+                if key not in self:
+                    return f'<{key}>'
+
+                return super().__getitem__(key)
+
+        orig_dict = record.__dict__
+        record.__dict__ = SafeRecordDict(orig_dict)
+
+        try:
+            return super().format(record)
+        finally:
+            record.__dict__ = orig_dict
+
+
 _FORMATTERS = {
     'simple': logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

@@ -9,6 +9,7 @@ Serving the Juturna manager requires Juturna to be installed with the
 `httpwrapper` dependency group.
 """
 
+from juturna.cli import _cli_utils
 from juturna.cli.commands._juturna_service import run
 
 
@@ -43,33 +44,10 @@ def setup_parser(subparsers):  # noqa: D103
     )
 
     parser.add_argument(
-        '--log-level',
+        '--log-config',
         '-l',
-        type=str,
-        default='DEBUG',
-        choices=['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR'],
-        help='set log level during pipeline execution',
-    )
-
-    parser.add_argument(
-        '--log-format',
-        '-F',
-        type=str,
-        default='full',
-        choices=[
-            'simple',
-            'colored',
-            'full',
-            'compact',
-            'development',
-            'minimal',
-            'json',
-        ],
-        help='log format',
-    )
-
-    parser.add_argument(
-        '--log-file', '-L', type=str, help='log file destination'
+        type=_cli_utils._is_file_ok,
+        help='log configuration file',
     )
 
 
@@ -78,7 +56,5 @@ def _execute(args):
         args.host,
         args.port,
         args.folder,
-        args.log_level,
-        args.log_format,
-        args.log_file,
+        args.log_config,
     )

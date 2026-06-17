@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from juturna.utils.log_utils import _formatters
 
@@ -12,6 +13,7 @@ class _JuturnaLogger:
         self._root_handler.setFormatter(
             _formatters._FORMATTERS[self._root_formatter_name]
         )
+        self._root_handler.addFilter(JuturnaPipelineFilter())
         self._root_logger.addHandler(self._root_handler)
         self._root_logger.propagate = False
 
@@ -36,6 +38,71 @@ class _JuturnaLogger:
             handler.setFormatter(fmt)
 
 
+class JuturnaPipelineFilter(logging.Filter):
+    _REGISTRY = dict()
+    _RESERVED = [
+        'args',
+        'created',
+        'exc_info',
+        'exc_text',
+        'filename',
+        'funcName',
+        'getMessage',
+        'levelname',
+        'levelno',
+        'lineno',
+        'module',
+        'msecs',
+        'msg',
+        'name',
+        'pathname',
+        'process',
+        'processName',
+        'relativeCreated',
+        'stack_info',
+        'taskName',
+        'thread',
+        'threadName',
+    ]
+
+    @classmethod
+    def register_pipeline(cls, pipe_name: str, extras: dict):
+        # if any(map(lambda x: x in cls._RESERVED, extras.keys())):
+        if res := [k for k in extras if k in cls._RESERVED]:
+            warnings.warn(
+                f'cannot register extras for {pipe_name}: '
+                f'extras contain reserved keys: {res}',
+                stacklevel=1,
+            )
+
+            return
+
+        cls._REGISTRY[pipe_name] = extras or dict()
+
+    @classmethod
+    def unregister_pipeline(cls, pipe_name: str):
+        if pipe_name in cls._REGISTRY:
+            del cls._REGISTRY[pipe_name]
+
+    @classmethod
+    def reserved(cls) -> list:
+        return cls._RESERVED
+
+    def filter(self, record):
+        parts = record.name.split('.')
+
+        if len(parts) >= 2 and parts[0] == 'jt':
+            pipe_name = parts[1]
+
+            extras = self._REGISTRY.get(pipe_name, dict())
+
+            for key, value in extras.items():
+                if not hasattr(record, key):
+                    setattr(record, key, value)
+
+        return True
+
+
 _JT_LOGGER = _JuturnaLogger()
 
 
@@ -51,6 +118,10 @@ def formatter(formatter_name: str = '') -> str | None:
     return _JT_LOGGER._formatter(formatter_name)
 
 
+def add_formatter(name: str, formatter: logging.Formatter):
+    _formatters._FORMATTERS[name] = formatter
+
+
 def add_handler(
     handler: logging.Handler, formatter: str | logging.Formatter = ''
 ):
@@ -61,4 +132,13 @@ def add_handler(
     )
 
     handler.setFormatter(formatter)
+    handler.addFilter(JuturnaPipelineFilter())
     jt_logger().addHandler(handler)
+
+
+def add_extra(logger_name: str, extra: dict):
+    JuturnaPipelineFilter.register_pipeline(logger_name, extra)
+
+
+def drop_extra(logger_name: str):
+    JuturnaPipelineFilter.unregister_pipeline(logger_name)

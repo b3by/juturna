@@ -1,9 +1,9 @@
 import pathlib
+import json
 import logging
+import logging.config
 
 import uvicorn
-
-import juturna as jt
 
 from fastapi import FastAPI
 
@@ -82,16 +82,13 @@ def run(
     host: str,
     port: int,
     folder: str,
-    log_level: str,
-    log_format: str,
-    log_file: str,
+    log_config: str,
 ):
-    jt.log.formatter(log_format)
-    jt.log.jt_logger().setLevel(log_level)
+    if log_config:
+        with open(log_config) as f:
+            cfg = json.load(f)
 
-    if log_file:
-        _handler = logging.FileHandler(log_file)
-        jt.log.add_handler(_handler)
+        logging.config.dictConfig(cfg)
 
     logger.info('starting juturna service...')
 

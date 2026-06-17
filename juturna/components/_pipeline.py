@@ -8,7 +8,7 @@ import typing
 from juturna.components import Node
 from juturna.components import Message
 
-from juturna.utils.log_utils import jt_logger
+from juturna.utils import log_utils
 
 from juturna.names import ComponentStatus
 from juturna.names import PipelineStatus
@@ -41,7 +41,12 @@ class Pipeline:
         self._pipe_id = self._raw_config['pipeline']['id']
         self._pipe_path = self._raw_config['pipeline']['folder']
 
-        self._logger = jt_logger(self._name)
+        self._logger = log_utils.jt_logger(self._name)
+
+        if _log_extra := self._raw_config['pipeline'].get('log_extra'):
+            log_utils.add_extra(
+                self._name, {'pipeline_id': self._name, **_log_extra}
+            )
 
         self._nodes: dict[str, Node] = dict()
         self._links: list = list()
@@ -324,5 +329,7 @@ class Pipeline:
         self._nodes = None
         self._status = PipelineStatus.DESTROYED
         gc.collect()
+
+        log_utils.drop_extra(self._name)
 
         self._logger.info('pipe destroyed')
