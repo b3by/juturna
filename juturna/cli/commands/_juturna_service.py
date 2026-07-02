@@ -6,6 +6,7 @@ import logging.config
 import uvicorn
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from juturna.components._pipeline_manager import PipelineManager
 from juturna.cli.commands.models.api import PipelineConfig
@@ -18,9 +19,19 @@ from juturna.cli.commands.exceptions import (
 app = FastAPI()
 logger = logging.getLogger('jt.service')
 
-##register exception handlers
+# register exception handlers
 register_pipeline_exception_handlers(app)
 register_generic_exception_handler(app, logger)
+
+
+def enable_cross_origins(app: FastAPI):
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=['*'],
+        allow_credentials=True,
+        allow_methods=['*'],
+        allow_headers=['*'],
+    )
 
 
 @app.get('/pipelines')
@@ -78,12 +89,7 @@ def pipeline_status(pipeline_id: str):
     return status
 
 
-def run(
-    host: str,
-    port: int,
-    folder: str,
-    log_config: str,
-):
+def run(host: str, port: int, folder: str, log_config: str, dev: bool):
     if log_config:
         with open(log_config) as f:
             cfg = json.load(f)
@@ -91,6 +97,11 @@ def run(
         logging.config.dictConfig(cfg)
 
     logger.info('starting juturna service...')
+
+    if dev:
+        enable_cross_origins(app)
+
+        logger.info('development mode enabled')
 
     try:
         pathlib.Path(folder).mkdir(parents=True)
