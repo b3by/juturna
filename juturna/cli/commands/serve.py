@@ -50,11 +50,13 @@ def setup_parser(subparsers):  # noqa: D103
         help='log configuration file',
     )
 
+    parser.add_argument(
+        '--dev',
+        '-d',
+        action='store_true',
+        help='run service in development mode',
+    )
+
 
 def _execute(args):
-    run(
-        args.host,
-        args.port,
-        args.folder,
-        args.log_config,
-    )
+    run(args.host, args.port, args.folder, args.log_config, args.dev)
