@@ -16,7 +16,6 @@ import numpy as np
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.names import PixelFormat
 from juturna.payloads import BytesPayload, ImagePayload
@@ -129,12 +128,13 @@ class VideoFile(Node[BytesPayload, ImagePayload]):
         """Destroy the node"""
         self.stop()
 
-    def update(self, message: Message[BytesPayload], state: State):
+    def update(self, message: Message[BytesPayload], **kwargs):
         """Receive a message, transmit a message"""
         try:
             full_frame = np.frombuffer(message.payload.cnt, np.uint8).reshape(
                 (self._height, self._width, 3)
             )
+            state = kwargs.get('state')
             _sent = state.get('sent', 0)
             to_send = Message(
                 creator=self.name,

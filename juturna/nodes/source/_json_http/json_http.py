@@ -25,7 +25,7 @@ from http.server import HTTPServer
 from juturna.components import _resource_broker as rb
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
+
 from juturna.payloads import ObjectPayload
 
 
@@ -120,10 +120,11 @@ class JsonHttp(Node[ObjectPayload, ObjectPayload]):
             self._httpd.server_close()
             self._httpd = None
 
-    def update(self, message: Message[ObjectPayload], state: State) -> None:
+    def update(self, message: Message[ObjectPayload], **kwargs) -> None:
         """Receive an update message"""
         self.logger.info(f'HTTP server received a message: {message}')
 
+        state = kwargs.get('state')
         _sent = state.get('sent', 0)
         message.version = _sent
 

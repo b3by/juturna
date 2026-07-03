@@ -14,7 +14,6 @@ import chromadb
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 from juturna.payloads import Draft
@@ -88,7 +87,7 @@ class RagChroma(Node[ObjectPayload, ObjectPayload]):
 
         super().start()
 
-    def update(self, message: Message[ObjectPayload], state: State):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         query = message.payload[self._target]
 

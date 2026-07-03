@@ -18,7 +18,6 @@ import numpy as np
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import AudioPayload
 from juturna.payloads import ControlPayload
@@ -128,9 +127,7 @@ class AudioFile(Node[AudioPayload, AudioPayload]):
             yield chunk, sample_offset
             sample_offset += wave_len
 
-    def update(  # noqa: D102
-        self, message: Message[AudioPayload | ControlPayload], state: State
-    ):
+    def update(self, message: Message[AudioPayload | ControlPayload], **kwargs):  # noqa: D102
         message.meta['session_id'] = self.pipe_id
 
         self.transmit(message)

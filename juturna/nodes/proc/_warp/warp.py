@@ -83,7 +83,7 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
 
         self.logger.info(f'warmup node: {self.name}')
 
-    def update(self, message: Message[T_Input], state: State):
+    def update(self, message: Message[T_Input], **kwargs):
         """
         Send message via gRPC and wait for response
 
@@ -94,10 +94,12 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
         ----------
         message : Message[T_Input]
             The message to send with input payload type.
-        state : State
-            The node state.
+        kwargs : dict
+            State and more.
 
         """
+        state: State = kwargs['state']
+
         try:
             self.logger.info('converting message to protobuf...')
             message_proto = message_to_proto(message)
@@ -106,6 +108,7 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
                 message=message_proto,
                 creator=self.name,
                 pipe_id=self.pipe_id,
+                state=state,
                 request_type=type(T_Input).__name__,
                 response_type=type(T_Output).__name__,
                 priority=0,
@@ -134,6 +137,9 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
 
             self.transmit(to_send)
             self.logger.info(f'transmit: {to_send.version}')
+
+            for k, v in response_envelope.state.items():
+                state[k] = v
 
         except grpc.RpcError as e:
             self.logger.error(f'gRPC error: {e.code()} - {e.details()}')

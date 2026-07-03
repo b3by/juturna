@@ -15,7 +15,6 @@ import av
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.components import _resource_broker as rb
 from juturna.names import PixelFormat
@@ -103,8 +102,9 @@ class VideoRtpAv(Node[BytesPayload, ImagePayload]):
             self._t.join()
         super().stop()
 
-    def update(self, message: Message[ImagePayload], state: State):
+    def update(self, message: Message[ImagePayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
+        state = kwargs.get('state')
         _sent = state.get('sent', 0)
 
         message.version = _sent

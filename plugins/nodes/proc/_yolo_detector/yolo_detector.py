@@ -14,7 +14,6 @@ import numpy as np
 
 from juturna.components import Message
 from juturna.components import Node
-from juturna.components import State
 
 from juturna.payloads._payloads import ImagePayload
 
@@ -85,7 +84,7 @@ class YoloDetector(Node[ImagePayload, ImagePayload]):
 
         self.logger.info('tracker ready')
 
-    def update(self, message: Message[ImagePayload], state: State):
+    def update(self, message: Message[ImagePayload], **kwargs):
         """Process an incoming message"""
         assert self._model is not None
 

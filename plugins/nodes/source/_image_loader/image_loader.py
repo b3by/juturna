@@ -26,7 +26,6 @@ from watchdog.observers import Observer
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 from juturna.payloads import ImagePayload
@@ -121,7 +120,7 @@ class ImageLoader(Node[ObjectPayload, ImagePayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[ObjectPayload], state: State):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         try:
             image = Image.open(message.payload['src_path'])
@@ -131,7 +130,9 @@ class ImageLoader(Node[ObjectPayload, ImagePayload]):
 
             image.load()
         except UnidentifiedImageError:
-            self.logger.warn(f'cannot load image {message.payload["src_path"]}')
+            self.logger.warning(
+                f'cannot load image {message.payload["src_path"]}'
+            )
 
             return
 

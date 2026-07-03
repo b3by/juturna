@@ -65,8 +65,9 @@ class MeetEcho(Node[ObjectPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[ObjectPayload], state: State):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
+        state: State = kwargs['state']
         _accumulating = state.get('accumulating', False)
         _messages = state.get('messages', list())
 

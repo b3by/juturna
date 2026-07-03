@@ -13,7 +13,6 @@ from websockets.sync.client import connect
 
 from juturna.components import Message
 from juturna.components import Node
-from juturna.components import State
 
 from juturna.payloads import BasePayload
 
@@ -41,7 +40,7 @@ class NotifierWebsocket(Node[BasePayload, None]):
         """Warmup the node"""
         self.logger.info(f'[{self.name}] set to endpoint {self._endpoint}')
 
-    def update(self, message: Message[BasePayload], state: State):
+    def update(self, message: Message[BasePayload], **kwargs):
         """Receive a message, transmit a message"""
         meta = dict(message.meta)
         to_send = Message[BasePayload](

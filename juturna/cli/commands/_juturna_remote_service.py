@@ -148,6 +148,12 @@ class MessagingServiceImpl(messaging_service_pb2_grpc.MessagingServiceServicer):
             sender = envelope_dict.get('sender')
             envelope_id = envelope_dict.get('id')
             pipe_id = envelope_dict['pipe_id']
+            state = envelope_dict['state']
+
+            if self._pipe_state_store.get(pipe_id, State()) != state:
+                logger.warning('stored state mismatch with received state')
+
+                self._pipe_state_store[pipe_id] = state
 
             if self._pipe_state_store.get(pipe_id, None) is None:
                 self._pipe_state_store[pipe_id] = State()
@@ -198,13 +204,11 @@ class MessagingServiceImpl(messaging_service_pb2_grpc.MessagingServiceServicer):
 
             proto_response = message_to_proto(response_message)
 
-            state_deltas = self._pipe_state_store[pipe_id]
-            logger.info(f'deltas for {pipe_id}: {state_deltas}')
-
             response_envelope = create_envelope(
                 message=proto_response,
                 creator=self.remote_name,
                 pipe_id=pipe_id,
+                state=self._pipe_state_store[pipe_id],
                 configuration={},
                 metadata={
                     'processing_time': time.time() - request_context.created_at

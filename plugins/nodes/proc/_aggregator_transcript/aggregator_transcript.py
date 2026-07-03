@@ -14,7 +14,6 @@ import typing
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 from juturna.payloads import Draft
@@ -69,7 +68,7 @@ class AggregatorTranscript(Node[ObjectPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[ObjectPayload], state: State):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         transcript = message.payload['transcript']
 

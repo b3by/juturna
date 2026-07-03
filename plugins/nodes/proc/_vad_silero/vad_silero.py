@@ -16,7 +16,6 @@ import numpy as np
 
 from juturna.components import Message
 from juturna.components import Node
-from juturna.copmonents import State
 
 from juturna.payloads import Draft
 from juturna.payloads import AudioPayload
@@ -78,7 +77,7 @@ class VadSilero(Node[AudioPayload, AudioPayload]):
 
         self._data = deque(maxlen=self._keep)
 
-    def update(self, message: Message[AudioPayload], state: State):
+    def update(self, message: Message[AudioPayload], **kwargs):
         """Update the node"""
         assert isinstance(self._data, deque)
         self.logger.info(f'receive: {message.version}')

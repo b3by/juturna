@@ -16,7 +16,6 @@ import numpy as np
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import AudioPayload
 from juturna.components import _resource_broker as rb
@@ -141,7 +140,7 @@ class AudioRtpAv(Node[AudioPayload, AudioPayload]):
         self._t.join()
         super().stop()
 
-    def update(self, message: Message[AudioPayload], state: State):
+    def update(self, message: Message[AudioPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         self.logger.debug('update method not implemented for source node')
 

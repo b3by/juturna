@@ -13,7 +13,6 @@ import requests
 
 from juturna.components import Message
 from juturna.components import Node
-from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 
@@ -68,7 +67,7 @@ class NotifierHTTP(Node[ObjectPayload, None]):
 
             self._endpoint = value
 
-    def update(self, message: Message[ObjectPayload], state: State):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive a message, transmit a message"""
         to_send = Message[ObjectPayload](
             creator=message.creator,

@@ -15,7 +15,6 @@ from websockets.sync.server import serve
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import BytesPayload
 from juturna.payloads import ObjectPayload
@@ -70,7 +69,7 @@ class JsonWebsocket(Node[BytesPayload, ObjectPayload]):
         if self._thread:
             self._thread.join(timeout=2)
 
-    def update(self, message: Message[BytesPayload], state: State):  # noqa: D102
+    def update(self, message: Message[BytesPayload], **kwargs):  # noqa: D102
         self.logger.info(f'ws server message received: {message.payload.cnt}')
 
         try:
@@ -80,6 +79,7 @@ class JsonWebsocket(Node[BytesPayload, ObjectPayload]):
 
             return
 
+        state = kwargs.get('state')
         _sent = state.get('sent', 0)
 
         to_send = Message[ObjectPayload](

@@ -19,10 +19,4 @@ python -m grpc_tools.protoc \
   --grpc_python_out=$OUT_DIR \
   $PROTO_DIR/messaging_service.proto
 
-python -m grpc_tools.protoc \
-  -I=$PROTO_DIR \
-  --python_out=$OUT_DIR \
-  --grpc_python_out=$OUT_DIR \
-  $PROTO_DIR/state_delta.proto
-
 echo "protobuf compilation completed!"

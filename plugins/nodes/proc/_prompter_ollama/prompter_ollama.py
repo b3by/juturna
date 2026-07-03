@@ -15,7 +15,6 @@ import ollama
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 from juturna.payloads import Batch
@@ -109,7 +108,7 @@ class PrompterOllama(Node[ObjectPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[ObjectPayload | Batch], state: State):
+    def update(self, message: Message[ObjectPayload | Batch], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         if isinstance(message.payload, Batch):
             content = ' '.join(

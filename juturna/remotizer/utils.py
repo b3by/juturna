@@ -331,6 +331,7 @@ def create_envelope(
     metadata: dict[str, Any],
     creator: str,
     pipe_id: str,
+    state: dict[str, Any],
     id: str = str(uuid.uuid4()),
     priority: int = 1,
     timeout: int = 30,

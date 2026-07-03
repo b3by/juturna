@@ -377,7 +377,7 @@ class Node[T_Input, T_Output]:
 
     def configure(self): ...
 
-    def update(self, message: Message[T_Input], state: State): ...
+    def update(self, message: Message[T_Input], **kwargs): ...
 
     def set_on_config(self, prop: str, value: Any): ...
 
@@ -431,7 +431,7 @@ class Node[T_Input, T_Output]:
             with self._pending_condition:
                 self._pending_updates += 1
             try:
-                self.update(batch, self._state)
+                self.update(batch, state=self._state)
             finally:
                 with self._pending_condition:
                     self._pending_updates -= 1

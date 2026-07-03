@@ -19,7 +19,6 @@ from nemo.collections.speechlm2 import SALM
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import AudioPayload
 from juturna.payloads import ObjectPayload
@@ -86,7 +85,7 @@ class TranscriberQwen(Node[AudioPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[AudioPayload], state: State):
+    def update(self, message: Message[AudioPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         self.logger.info(f'trx received {message.version}')
 

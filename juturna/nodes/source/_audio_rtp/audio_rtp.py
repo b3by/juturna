@@ -17,7 +17,6 @@ import numpy as np
 
 from juturna.components import Message
 from juturna.components import Node
-from juturna.components import State
 from juturna.components import _resource_broker as rb
 
 from juturna.payloads import BytesPayload, AudioPayload
@@ -213,7 +212,7 @@ class AudioRTP(Node[BytesPayload, AudioPayload]):
 
         return base_config
 
-    def update(self, message: Message[BytesPayload], state: State):
+    def update(self, message: Message[BytesPayload], **kwargs):
         """Read a message, return a message"""
         if not self._subprocess_running:
             return
@@ -222,6 +221,7 @@ class AudioRTP(Node[BytesPayload, AudioPayload]):
             message.payload.cnt, self._in_channels
         )
 
+        state: dict = kwargs.get('state')
         _abs_recv = state.get('abs_recv', 0)
 
         to_send = Message[AudioPayload](

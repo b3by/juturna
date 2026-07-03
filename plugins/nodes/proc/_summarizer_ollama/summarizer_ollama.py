@@ -18,7 +18,6 @@ import ollama
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 from juturna.payloads import Batch
@@ -131,7 +130,7 @@ class SummarizerOllama(Node[ObjectPayload, ObjectPayload]):
         self.logger.info(f'model {self._model_name} loaded')
 
     @safe_exec
-    def update(self, message: Message[ObjectPayload | Batch], state: State):
+    def update(self, message: Message[ObjectPayload | Batch], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         msgs = (
             message.payload.messages
