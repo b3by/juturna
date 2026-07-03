@@ -14,7 +14,7 @@ from juturna.remotizer.c_protos import messaging_service_pb2_grpc
 from juturna.remotizer.utils import (
     message_to_proto,
     create_envelope,
-    deserialize_message,
+    deserialize_envelope,
 )
 
 from juturna.components import Message
@@ -108,7 +108,7 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
                 message=message_proto,
                 creator=self.name,
                 pipe_id=self.pipe_id,
-                state=state,
+                state=dict(state),
                 request_type=type(T_Input).__name__,
                 response_type=type(T_Output).__name__,
                 priority=0,
@@ -131,14 +131,14 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
             )
 
             self.logger.info('converting response to Message...')
-            to_send: Message[T_Output] = deserialize_message(
-                response_envelope.message
-            )
+            envelope_dict = deserialize_envelope(response_envelope)
+
+            to_send: Message[T_Output] = envelope_dict['message']
 
             self.transmit(to_send)
             self.logger.info(f'transmit: {to_send.version}')
 
-            for k, v in response_envelope.state.items():
+            for k, v in envelope_dict['state'].items():
                 state[k] = v
 
         except grpc.RpcError as e:

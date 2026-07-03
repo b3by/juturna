@@ -332,7 +332,7 @@ def create_envelope(
     creator: str,
     pipe_id: str,
     state: dict[str, Any],
-    id: str = str(uuid.uuid4()),
+    id: str = '',
     priority: int = 1,
     timeout: int = 30,
     response_to: str = None,
@@ -343,9 +343,10 @@ def create_envelope(
     assert message is not None
 
     envelope = ProtoEnvelope()
-    envelope.id = id
+    envelope.id = id or str(uuid.uuid4())
     envelope.sender = creator
     envelope.pipe_id = pipe_id
+    envelope.state = state
     envelope.created_at = time.time()
     envelope.ttl = int(timeout)
     envelope.request_type = request_type
@@ -366,6 +367,7 @@ def deserialize_envelope(envelope: ProtoEnvelope) -> dict[str, Any]:
         'id': envelope.id,
         'sender': envelope.sender,
         'pipe_id': envelope.pipe_id,
+        'state': envelope.state,
         'response_to': envelope.response_to,
         'ttl': envelope.ttl,
         'request_type': envelope.request_type,
