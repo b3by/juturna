@@ -12,7 +12,6 @@ import numpy as np
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import BytesPayload
 
@@ -58,7 +57,8 @@ class DataStreamer(Node[None, BytesPayload]):
     def stop(self):
         super().stop()
 
-    def update(self, message: Message[BytesPayload], state: State):
+    def update(self, message: Message[BytesPayload], **kwargs):
+        state = kwargs['state']
         trx = state.get('transmitted', 0)
         message.version = trx
 

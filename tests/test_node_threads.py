@@ -4,7 +4,7 @@ from juturna.components import Message, Node, State
 from juturna.payloads import BytesPayload, ControlPayload, ControlSignal
 
 class SlowNode(Node):
-    def update(self, message: Message, state: State):
+    def update(self, message: Message, **kwargs):
         time.sleep(0.01)
 
 def generate_stop_message():

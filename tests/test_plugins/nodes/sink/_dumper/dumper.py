@@ -10,7 +10,6 @@ Test sink node. Dump received messages.
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads import BasePayload
 
@@ -28,7 +27,7 @@ class Dumper(Node[BasePayload, None]):
         super().stop()
         self.logger.info(f"{self._received} messages received in total")
 
-    def update(self, message: Message[BasePayload], state: State):
+    def update(self, message: Message[BasePayload], **kwargs):
         self._received += 1
         self.dump_json(message, f"message_{message.version}.json")
         self.logger.info(

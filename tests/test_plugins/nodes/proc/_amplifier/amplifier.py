@@ -11,7 +11,6 @@ import typing
 
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 # BasePayload type is intended to be a placehoder for the input-output types
 # you intend to use in the node implementation
@@ -57,7 +56,7 @@ class Amplifier(Node[BasePayload, BasePayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[BasePayload], state: State):
+    def update(self, message: Message[BasePayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         ...
 

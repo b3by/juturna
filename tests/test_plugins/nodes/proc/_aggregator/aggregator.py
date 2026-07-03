@@ -10,7 +10,6 @@ the concatenated version.
 """
 from juturna.components import Node
 from juturna.components import Message
-from juturna.components import State
 
 from juturna.payloads._payloads import Batch, AudioPayload
 
@@ -22,7 +21,7 @@ class Aggregator(Node[Batch, AudioPayload]):
         self._size = size
         self._received = 0
 
-    def update(self, message: Message, state: State):
+    def update(self, message: Message, **kwargs):
         self.dump_json(message, f'batch_{self._received}.json')
 
         self._received += 1
