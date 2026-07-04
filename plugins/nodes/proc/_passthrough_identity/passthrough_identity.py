@@ -31,9 +31,8 @@ class PassthroughIdentity(Node[BasePayload, BasePayload]):
         super().__init__(**kwargs)
 
         self._delay = delay
-        self._transmitted = 0
 
-    def update(self, message: Message[BasePayload]):
+    def update(self, message: Message[BasePayload], **kwargs):
         """Receive a message from downstream, transmit a message upstream"""
         self.logger.info(
             f'message {message.version} received from: {message.creator}'
@@ -47,8 +46,6 @@ class PassthroughIdentity(Node[BasePayload, BasePayload]):
         )
 
         to_send.meta = dict(message.meta)
-
-        self._transmitted += 1
 
         with to_send.timeit(f'{self.name}_delay'):
             time.sleep(self._delay)

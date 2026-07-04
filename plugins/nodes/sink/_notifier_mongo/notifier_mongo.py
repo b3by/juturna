@@ -59,7 +59,7 @@ class NotifierMongo(Node[ObjectPayload, None]):
 
         self.logger.info(f'[{self.name}] set to endpoint {self._endpoint}')
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive a message, transmit a message"""
         message = message.to_dict()
         message['session_id'] = self.pipe_id

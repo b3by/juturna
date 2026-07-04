@@ -25,6 +25,7 @@ from http.server import HTTPServer
 from juturna.components import _resource_broker as rb
 from juturna.components import Node
 from juturna.components import Message
+
 from juturna.payloads import ObjectPayload
 
 
@@ -59,7 +60,6 @@ class JsonHttp(Node[ObjectPayload, ObjectPayload]):
         self._endpoint: str = endpoint.lstrip('/')
         self._httpd: HTTPServer | None = None
         self._thread: threading.Thread | None = None
-        self._sent: int = 0
 
     def configure(self) -> None:
         """Configure the node before warming up"""
@@ -120,11 +120,17 @@ class JsonHttp(Node[ObjectPayload, ObjectPayload]):
             self._httpd.server_close()
             self._httpd = None
 
-    def update(self, message: Message[ObjectPayload]) -> None:
+    def update(self, message: Message[ObjectPayload], **kwargs) -> None:
         """Receive an update message"""
         self.logger.info(f'HTTP server received a message: {message}')
 
+        state = kwargs.get('state')
+        _sent = state.get('sent', 0)
+        message.version = _sent
+
         self.transmit(message)
+
+        state['sent'] = _sent + 1
 
     def _make_handler(self) -> type[BaseHTTPRequestHandler]:
         node = self
@@ -164,12 +170,10 @@ class JsonHttp(Node[ObjectPayload, ObjectPayload]):
 
                 msg = Message[ObjectPayload](
                     creator=node.name,
-                    version=node._sent,
                     payload=ObjectPayload.from_dict(json_content),
                 )
 
                 node.put(msg)
-                node._sent += 1
 
                 self.send_response(HTTPStatus.ACCEPTED)
                 self.end_headers()

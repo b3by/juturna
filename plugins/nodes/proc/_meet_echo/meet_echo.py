@@ -13,6 +13,7 @@ import typing
 
 from juturna.components import Node
 from juturna.components import Message
+from juturna.components import State
 
 from juturna.payloads import ObjectPayload
 from juturna.payloads import Draft
@@ -36,10 +37,6 @@ class MeetEcho(Node[ObjectPayload, ObjectPayload]):
         super().__init__(**kwargs)
 
         self._activation = activation
-        self._messages = list()
-        self._accumulating = False
-
-        self._sent = 0
 
     def configure(self):
         """Configure the node"""
@@ -68,10 +65,14 @@ class MeetEcho(Node[ObjectPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
+        state: State = kwargs['state']
+        _accumulating = state.get('accumulating', False)
+        _messages = state.get('messages', list())
+
         # not accumulating, no activation: ignore
-        if not self._accumulating and not self._has_activation(
+        if not _accumulating and not self._has_activation(
             message.payload[self._target]
         ):
             self.logger.info('meet echo inactive - skipping')
@@ -79,31 +80,32 @@ class MeetEcho(Node[ObjectPayload, ObjectPayload]):
             return
 
         # not accumulating, activation: start accumulating
-        if not self._accumulating and self._has_activation(
+        if not _accumulating and self._has_activation(
             message.payload[self._target]
         ):
-            self._accumulating = True
+            state['accumulating'] = True
 
             return
 
         # accumulating, message content: keep accumulating
-        if self._accumulating and not message.payload['silence']:
-            self._messages.append(message)
+        if _accumulating and not message.payload['silence']:
+            _messages.append(message)
+
+            state['messages'] = _messages
 
             return
 
         # accumulating, silence: command is complete
-        if self._accumulating and message.payload['silence']:
+        if _accumulating and message.payload['silence']:
             full_query = ' '.join(
                 [m.payload['suggestion'] for m in self._messages]
             )
 
-            self._accumulating = False
-            self._messages = list()
+            _sent = state.get('sent', 0)
 
             to_send = Message[ObjectPayload](
                 creator=self.name,
-                version=self._sent,
+                version=_sent,
                 payload=Draft(ObjectPayload),
                 timers_from=message,
             )
@@ -111,7 +113,10 @@ class MeetEcho(Node[ObjectPayload, ObjectPayload]):
             to_send.payload['input_query'] = full_query
 
             self.transmit(to_send)
-            self._sent += 1
+
+            state['sent'] = _sent + 1
+            state['accumulating'] = False
+            state['messages'] = list()
 
     def _has_activation(self, text: str):
         clean_activation = (

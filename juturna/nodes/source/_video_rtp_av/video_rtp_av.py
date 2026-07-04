@@ -15,6 +15,7 @@ import av
 
 from juturna.components import Node
 from juturna.components import Message
+
 from juturna.components import _resource_broker as rb
 from juturna.names import PixelFormat
 from juturna.payloads import BytesPayload, ImagePayload
@@ -76,7 +77,6 @@ class VideoRtpAv(Node[BytesPayload, ImagePayload]):
         self._sdp_file_path = None
         self._t = None
         self._stop_event = threading.Event()
-        self._sent = 0
 
     def configure(self):
         """Configure the node"""
@@ -102,9 +102,15 @@ class VideoRtpAv(Node[BytesPayload, ImagePayload]):
             self._t.join()
         super().stop()
 
-    def update(self, message: Message[ImagePayload]):
+    def update(self, message: Message[ImagePayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
+        state = kwargs.get('state')
+        _sent = state.get('sent', 0)
+
+        message.version = _sent
         self.transmit(message)
+
+        state['sent'] = _sent + 1
 
     def _stream_video_blocks(self):
         self._container = None
@@ -146,7 +152,6 @@ class VideoRtpAv(Node[BytesPayload, ImagePayload]):
 
                     to_send = Message[ImagePayload](
                         creator=self.name,
-                        version=self._sent,
                         payload=ImagePayload(
                             image=full_frame,
                             width=full_frame.shape[1],
@@ -157,7 +162,6 @@ class VideoRtpAv(Node[BytesPayload, ImagePayload]):
                     )
 
                     self.put(to_send)
-                    self._sent += 1
             except Exception as e:
                 if not self._stop_event.is_set():
                     self.logger.info(f'source unavailable ({e}), retrying...')

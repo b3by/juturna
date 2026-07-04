@@ -85,7 +85,7 @@ class TranscriberQwen(Node[AudioPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[AudioPayload]):
+    def update(self, message: Message[AudioPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         self.logger.info(f'trx received {message.version}')
 

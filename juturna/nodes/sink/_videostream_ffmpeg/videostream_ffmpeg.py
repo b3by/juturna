@@ -108,7 +108,7 @@ class VideostreamFFMPEG(Node[ImagePayload, None]):
         except Exception:
             ...
 
-    def update(self, message: Message[ImagePayload]):
+    def update(self, message: Message[ImagePayload], **kwargs):
         """Receive a message, transmit a message"""
         frame = message.payload.image
         frame_bytes = frame.tobytes()

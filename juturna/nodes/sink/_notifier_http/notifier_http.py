@@ -67,7 +67,7 @@ class NotifierHTTP(Node[ObjectPayload, None]):
 
             self._endpoint = value
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive a message, transmit a message"""
         to_send = Message[ObjectPayload](
             creator=message.creator,

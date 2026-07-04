@@ -130,7 +130,7 @@ class SummarizerOllama(Node[ObjectPayload, ObjectPayload]):
         self.logger.info(f'model {self._model_name} loaded')
 
     @safe_exec
-    def update(self, message: Message[ObjectPayload | Batch]):
+    def update(self, message: Message[ObjectPayload | Batch], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         msgs = (
             message.payload.messages

@@ -69,7 +69,7 @@ class TrackerYolo(Node[ImagePayload, ImagePayload]):
 
         self.logger.info('tracker ready')
 
-    def update(self, message: Message[ImagePayload]):
+    def update(self, message: Message[ImagePayload], **kwargs):
         """Receive a message, transmit a message"""
         image = message.payload.image
         results = self._model.predict(

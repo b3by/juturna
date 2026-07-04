@@ -56,7 +56,7 @@ class Amplifier(Node[BasePayload, BasePayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[BasePayload]):
+    def update(self, message: Message[BasePayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         ...
 

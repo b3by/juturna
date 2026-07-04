@@ -3,6 +3,7 @@ from juturna.components._message import Message
 from juturna.components._node import Node
 from juturna.components._pipeline import Pipeline
 from juturna.components._buffer import Buffer
+from juturna.components._state import State
 
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     'Node',
     'Pipeline',
     'Buffer',
+    'State',
 ]

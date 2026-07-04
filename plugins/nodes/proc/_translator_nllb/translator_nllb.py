@@ -124,7 +124,7 @@ class TranslatorNllb(Node[ObjectPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         self._buffer.append(message)
 

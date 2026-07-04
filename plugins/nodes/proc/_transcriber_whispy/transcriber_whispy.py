@@ -92,7 +92,7 @@ class TranscriberWhispy(Node[AudioPayload, ObjectPayload]):
 
         self.logger.info(f'warmup sources: {self.origins}')
 
-    def update(self, message: Message[AudioPayload]):
+    def update(self, message: Message[AudioPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         self.logger.info(f'received {message.version}')
 

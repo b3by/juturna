@@ -87,7 +87,7 @@ class RagChroma(Node[ObjectPayload, ObjectPayload]):
 
         super().start()
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         query = message.payload[self._target]
 

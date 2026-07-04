@@ -77,7 +77,7 @@ class VadSilero(Node[AudioPayload, AudioPayload]):
 
         self._data = deque(maxlen=self._keep)
 
-    def update(self, message: Message[AudioPayload]):
+    def update(self, message: Message[AudioPayload], **kwargs):
         """Update the node"""
         assert isinstance(self._data, deque)
         self.logger.info(f'receive: {message.version}')

@@ -41,7 +41,6 @@ class JsonWebsocket(Node[BytesPayload, ObjectPayload]):
         self._rtx_host = rtx_host
         self._rtx_port = rtx_port
 
-        self._sent = 0
         self._queue: queue.Queue[Message[ObjectPayload]] = queue.Queue()
         self._thread: threading.Thread | None = None
         self._server = None
@@ -70,7 +69,7 @@ class JsonWebsocket(Node[BytesPayload, ObjectPayload]):
         if self._thread:
             self._thread.join(timeout=2)
 
-    def update(self, message: Message[BytesPayload]):  # noqa: D102
+    def update(self, message: Message[BytesPayload], **kwargs):  # noqa: D102
         self.logger.info(f'ws server message received: {message.payload.cnt}')
 
         try:
@@ -80,8 +79,11 @@ class JsonWebsocket(Node[BytesPayload, ObjectPayload]):
 
             return
 
+        state = kwargs.get('state')
+        _sent = state.get('sent', 0)
+
         to_send = Message[ObjectPayload](
-            creator=self.name, version=self._sent, payload=Draft(ObjectPayload)
+            creator=self.name, version=_sent, payload=Draft(ObjectPayload)
         )
 
         for k, v in json_content.items():
@@ -89,16 +91,15 @@ class JsonWebsocket(Node[BytesPayload, ObjectPayload]):
 
         self.logger.info('ws source transmitting...')
         self.transmit(to_send)
-        self._sent += 1
+
+        state['sent'] = _sent + 1
 
     def _ws_handler(self, websocket):
         try:
             for raw in websocket:
                 payload = BytesPayload(cnt=raw)
 
-                msg = Message[BytesPayload](
-                    creator=self.name, version=self._sent, payload=payload
-                )
+                msg = Message[BytesPayload](creator=self.name, payload=payload)
 
                 self._queue.put(msg)
         except Exception as exc:

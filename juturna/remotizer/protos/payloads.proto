@@ -143,36 +143,42 @@ message ProtoEnvelope {
   // Intended receiver identifier
   string receiver = 4;
 
+  // Original pipe id
+  string pipe_id = 5;
+
+  // Node state object
+  string state = 6;
+
   // Response-to field: ID of the envelope this is responding to
   // Enables explicit request/response tracking
-  string response_to = 6;
+  string response_to = 7;
 
   // Time-to-live in seconds
   // After this duration, the message may be considered stale/expired
-  int64 ttl = 7;
+  int64 ttl = 8;
 
   // Envelope creation timestamp (Unix epoch in seconds)
-  double created_at = 8;
+  double created_at = 9;
 
   // Configuration parameters as key-value pairs
   // these message are used to the set_on_config call
-  google.protobuf.Struct configuration = 9;
+  google.protobuf.Struct configuration = 10;
 
   // Envelope metadata as key-value pairs
   // Different from message.meta - this is envelope-level metadata
-  google.protobuf.Struct metadata = 10;
+  google.protobuf.Struct metadata = 11;
 
   // message priority (0 = lowest, higher = more urgent)
   // for future use
-  int32 priority = 11;
+  int32 priority = 12;
 
   // request payload (not proto) type hint for faster routing/dispatching
   // e.g., "AudioPayload"
-  string request_type = 12;
+  string request_type = 13;
 
   // response payload (not proto) type hint for faster serialization
   // e.g., "ImagePayload"
-  string response_type = 13;
+  string response_type = 14;
 
 }
 

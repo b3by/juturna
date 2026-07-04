@@ -108,7 +108,7 @@ class PrompterOllama(Node[ObjectPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[ObjectPayload | Batch]):
+    def update(self, message: Message[ObjectPayload | Batch], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         if isinstance(message.payload, Batch):
             content = ' '.join(

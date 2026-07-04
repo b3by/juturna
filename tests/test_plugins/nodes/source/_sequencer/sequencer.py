@@ -66,7 +66,7 @@ class Sequencer(Node[None, AudioPayload]):
     def stop(self):
         super().stop()
 
-    def update(self, message: Message[AudioPayload]):
+    def update(self, message: Message[AudioPayload], **kwargs):
         self.transmit(message)
         self.dump_json(message, f'message_{self._transmitted}.json')
 

@@ -16,6 +16,7 @@ from juturna.names import PipelineStatus
 from juturna.payloads import ControlSignal, ControlPayload
 
 from juturna.components._dag import DAG
+from juturna.components._state import State
 from juturna.components._node_builder import _builder
 from juturna.components._telemetry_manager import TelemetryManager
 
@@ -51,6 +52,7 @@ class Pipeline:
         self._nodes: dict[str, Node] = dict()
         self._links: list = list()
         self._dag: DAG = DAG()
+        self._node_state_store = dict()
 
         self._telemetry_manager: TelemetryManager | None = None
         self._telemetry = False
@@ -173,6 +175,9 @@ class Pipeline:
 
             self._nodes[node_name] = _node
             self._dag.add_node(node_name)
+            self._node_state_store[node_name] = State()
+
+            _node.link_state(self._node_state_store[node_name])
 
         for link in links:
             from_node = link['from']

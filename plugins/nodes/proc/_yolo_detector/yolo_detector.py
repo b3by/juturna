@@ -84,7 +84,7 @@ class YoloDetector(Node[ImagePayload, ImagePayload]):
 
         self.logger.info('tracker ready')
 
-    def update(self, message: Message[ImagePayload]):
+    def update(self, message: Message[ImagePayload], **kwargs):
         """Process an incoming message"""
         assert self._model is not None
 

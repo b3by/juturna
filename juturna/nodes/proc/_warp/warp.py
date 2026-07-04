@@ -14,11 +14,12 @@ from juturna.remotizer.c_protos import messaging_service_pb2_grpc
 from juturna.remotizer.utils import (
     message_to_proto,
     create_envelope,
-    deserialize_message,
+    deserialize_envelope,
 )
 
 from juturna.components import Message
 from juturna.components import Node
+from juturna.components import State
 
 
 class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
@@ -82,7 +83,7 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
 
         self.logger.info(f'warmup node: {self.name}')
 
-    def update(self, message: Message[T_Input]):
+    def update(self, message: Message[T_Input], **kwargs):
         """
         Send message via gRPC and wait for response
 
@@ -92,9 +93,13 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
         Parameters
         ----------
         message : Message[T_Input]
-            The message to send with input payload type
+            The message to send with input payload type.
+        kwargs : dict
+            State and more.
 
         """
+        state: State = kwargs['state']
+
         try:
             self.logger.info('converting message to protobuf...')
             message_proto = message_to_proto(message)
@@ -102,6 +107,8 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
             envelope = create_envelope(
                 message=message_proto,
                 creator=self.name,
+                pipe_id=self.pipe_id,
+                state=dict(state),
                 request_type=type(T_Input).__name__,
                 response_type=type(T_Output).__name__,
                 priority=0,
@@ -111,9 +118,9 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
             )
 
             envelope.configuration.update(self._remote_config)
-            self.logger.info(f'sending message (envelope_id={envelope.id})...')
 
-            self.logger.info(f'sending message id {message.id}...')
+            self.logger.info(f'sending message (envelope_id={envelope.id})...')
+            self.logger.info(f'sending message id {message.id}')
 
             response_envelope = self.stub.SendAndReceive(
                 envelope, timeout=self._timeout
@@ -124,12 +131,15 @@ class Warp[T_Input, T_Output](Node[T_Input, T_Output]):
             )
 
             self.logger.info('converting response to Message...')
-            to_send: Message[T_Output] = deserialize_message(
-                response_envelope.message
-            )
+            envelope_dict = deserialize_envelope(response_envelope)
+
+            to_send: Message[T_Output] = envelope_dict['message']
 
             self.transmit(to_send)
             self.logger.info(f'transmit: {to_send.version}')
+
+            for k, v in envelope_dict['state'].items():
+                state[k] = v
 
         except grpc.RpcError as e:
             self.logger.error(f'gRPC error: {e.code()} - {e.details()}')

@@ -83,7 +83,7 @@ class NotifierUDP(Node[ObjectPayload, None]):
         elif prop == 'port':
             self._address[1] = value
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive a message, transmit a message"""
         chunks = self._prepare_chunks(message, message.version)
 

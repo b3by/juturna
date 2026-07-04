@@ -127,16 +127,19 @@ class VideoRTP(Node[BytesPayload, ImagePayload]):
 
         return base_config
 
-    def update(self, message: Message[BytesPayload]):
+    def update(self, message: Message[BytesPayload], **kwargs):
         """Receive a message, transmit a message"""
         try:
             full_frame = np.frombuffer(message.payload.cnt, np.uint8).reshape(
                 (self._height, self._width, 3)
             )
 
+            state = kwargs.get('state')
+            _sent = state.get('sent', 0)
+
             to_send = Message[ImagePayload](
                 creator=self.name,
-                version=self._sent,
+                version=_sent,
                 payload=ImagePayload(
                     image=full_frame,
                     width=full_frame.shape[0],
@@ -147,7 +150,7 @@ class VideoRTP(Node[BytesPayload, ImagePayload]):
             )
 
             self.transmit(to_send)
-            self._sent += 1
+            state['sent'] = _sent + 1
         except Exception as _:
             ...
 

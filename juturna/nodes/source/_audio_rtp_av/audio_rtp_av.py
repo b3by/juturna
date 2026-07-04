@@ -140,7 +140,7 @@ class AudioRtpAv(Node[AudioPayload, AudioPayload]):
         self._t.join()
         super().stop()
 
-    def update(self, message: Message[AudioPayload]):
+    def update(self, message: Message[AudioPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         self.logger.debug('update method not implemented for source node')
 

@@ -8,8 +8,6 @@ Aggregator
 Test node. Collect a number of messages, aggregate their content, then return
 the concatenated version.
 """
-import typing
-
 from juturna.components import Node
 from juturna.components import Message
 
@@ -23,7 +21,7 @@ class Aggregator(Node[Batch, AudioPayload]):
         self._size = size
         self._received = 0
 
-    def update(self, message: Message):
+    def update(self, message: Message, **kwargs):
         self.dump_json(message, f'batch_{self._received}.json')
 
         self._received += 1

@@ -18,6 +18,7 @@ import numpy as np
 
 from juturna.components import Node
 from juturna.components import Message
+
 from juturna.payloads import AudioPayload
 from juturna.payloads import ControlPayload
 from juturna.payloads import ControlSignal
@@ -53,7 +54,6 @@ class AudioFile(Node[AudioPayload, AudioPayload]):
 
         self._audio = None
         self._audio_chunks = None
-        self._transmitted = 0
 
     def warmup(self):  # noqa: D102
         resampler = av.audio.resampler.AudioResampler(
@@ -92,6 +92,7 @@ class AudioFile(Node[AudioPayload, AudioPayload]):
 
         if audio_chunk is None:
             self.logger.info('last chunk processed, stopping')
+
             return Message[ControlPayload](
                 creator=self.name,
                 payload=ControlPayload(signal=ControlSignal.STOP),
@@ -126,7 +127,7 @@ class AudioFile(Node[AudioPayload, AudioPayload]):
             yield chunk, sample_offset
             sample_offset += wave_len
 
-    def update(self, message: Message[AudioPayload | ControlPayload]):  # noqa: D102
+    def update(self, message: Message[AudioPayload | ControlPayload], **kwargs):  # noqa: D102
         message.meta['session_id'] = self.pipe_id
 
         self.transmit(message)

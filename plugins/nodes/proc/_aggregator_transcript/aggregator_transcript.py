@@ -68,7 +68,7 @@ class AggregatorTranscript(Node[ObjectPayload, ObjectPayload]):
         """Destroy the node"""
         ...
 
-    def update(self, message: Message[ObjectPayload]):
+    def update(self, message: Message[ObjectPayload], **kwargs):
         """Receive data from upstream, transmit data downstream"""
         transcript = message.payload['transcript']
 
